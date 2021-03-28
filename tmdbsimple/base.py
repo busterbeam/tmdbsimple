@@ -11,8 +11,8 @@ Created by Celia Oakley on 2013-10-31.
 :license: GPLv3, see LICENSE for more details
 """
 
-import json
-import requests
+from json import dumps
+from requests import request
 
 
 class APIKeyError(Exception):
@@ -26,7 +26,8 @@ class TMDB(object):
     BASE_PATH = ''
     URLS = {}
 
-    def __init__(self):
+    def __init__(self, api_key=False):
+        self.api_key = api_key
         from . import API_VERSION, REQUESTS_SESSION
         self.base_uri = 'https://api.themoviedb.org'
         self.base_uri += '/{version}'.format(version=API_VERSION)
@@ -63,16 +64,17 @@ class TMDB(object):
 
     def _get_params(self, params):
         from . import API_KEY
-        if not API_KEY:
+        if API_KEY:
+            api_dict = {'api_key': API_KEY}
+        elif self.api_key:
+            api_dict = {'api_key': self.api_key}
+        else:
             raise APIKeyError
-
-        api_dict = {'api_key': API_KEY}
         if params:
             params.update(api_dict)
             for key, value in params.items():
                 if isinstance(params[key], bool):
                     params[key] = 'true' if value is True else 'false'
-
         else:
             params = api_dict
         return params
@@ -83,11 +85,11 @@ class TMDB(object):
 
         # Create a new request session if no global session is defined
         if self.session is None:
-            response = requests.request(
+            response = request(
                 method,
                 url,
                 params=params,
-                data=json.dumps(payload) if payload else payload,
+                data=dumps(payload) if payload else payload,
                 headers=self.headers,
             )
 
@@ -97,7 +99,7 @@ class TMDB(object):
                 method,
                 url,
                 params=params,
-                data=json.dumps(payload) if payload else payload,
+                data=dumps(payload) if payload else payload,
                 headers=self.headers,
             )
 
